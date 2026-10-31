@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>간단 업무 보고서</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #f2f4f7;
+    }
+
+    header {
+      padding: 32px;
+      background-color: #1f6fd1;
+      color: #ffffff;
+      text-align: center;
+    }
+
+    header h1 {
+      margin-top: 0;
+    }
+
+    main {
+      padding: 32px;
+    }
+
+    section {
+      padding: 0;
+    }
+
+    .report-scene {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .teacher-wrap {
+      position: relative;
+      z-index: 1;
+      width: min(34vw, 360px);
+      margin-right: -90px;
+    }
+
+    .teacher {
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 100%;
+    }
+
+    .pointer-rod {
+      position: absolute;
+      z-index: 0;
+      top: 21.5%;
+      left: 63.5%;
+      width: 38%;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #d6a15c, #70441f 48%, #2f1b0e);
+      box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+      transform: rotate(-26deg);
+      transform-origin: left center;
+    }
+
+    .pointer-rod::after {
+      position: absolute;
+      top: 50%;
+      right: -3px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background-color: #5f351b;
+      content: '';
+      transform: translateY(-50%);
+    }
+
+    .pointer-rod.is-tapping {
+      animation: pointer-tap 0.7s ease-in-out;
+    }
+
+    .report-scene section {
+      width: 50%;
+      flex-shrink: 0;
+    }
+
+    .chalkboard-report {
+      position: relative;
+      width: 100%;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .chalkboard-report img {
+      display: block;
+      width: 100%;
+      border-radius: 6px;
+    }
+
+    .submit-button {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 2;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 6px;
+      background-color: #1f6fd1;
+      color: #ffffff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .submit-button:disabled {
+      background-color: #777777;
+      cursor: default;
+    }
+
+    .chalk-writing {
+      position: absolute;
+      inset: 0;
+      padding: 8% 10%;
+      color: #f7f4e8;
+      font-family: inherit;
+      text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
+    }
+
+    .chalk-writing h3 {
+      margin: 0 0 4%;
+      font-size: 35px;
+    }
+
+    .chalk-writing p,
+    .chalk-writing li {
+      font-size: 18px;
+    }
+
+    .chalk-writing li {
+      margin-bottom: 10px;
+    }
+
+    .chalk-writing p {
+      margin: 0 0 3%;
+    }
+
+    .chalk-writing ul {
+      margin: 0;
+      padding-left: 5%;
+    }
+
+    .chalk-writing h3,
+    .chalk-writing p,
+    .chalk-writing li {
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+    }
+
+    .chalkboard-report .chalk-eraser {
+      position: absolute;
+      top: 0;
+      left: -16%;
+      z-index: 3;
+      /* 칠판 지우개가 글자 한 줄을 덮는 정도의 현실적인 크기 */
+      width: 32px;
+      height: auto;
+      border-radius: 4px;
+      opacity: 0;
+      object-fit: contain;
+      pointer-events: none;
+      /* 가로 지우개를 세로로 세워 글자 위를 움직입니다. */
+      transform: rotate(90deg);
+    }
+
+    .chalkboard-report.is-writing .chalk-writing h3 {
+      animation: chalk-write 0.8s steps(12, end) forwards;
+    }
+
+    .chalkboard-report.is-writing .chalk-writing p {
+      animation: chalk-write 1.2s 0.8s steps(18, end) forwards;
+    }
+
+    .chalkboard-report.is-writing .chalk-writing li:nth-child(1) {
+      animation: chalk-write 0.8s 2s steps(12, end) forwards;
+    }
+
+    .chalkboard-report.is-writing .chalk-writing li:nth-child(2) {
+      animation: chalk-write 0.8s 2.8s steps(12, end) forwards;
+    }
+
+    .chalkboard-report.is-writing .chalk-writing li:nth-child(3) {
+      animation: chalk-write 0.8s 3.6s steps(12, end) forwards;
+    }
+
+    .chalkboard-report.is-erasing .chalk-eraser {
+      animation: erase-board 7s linear forwards;
+    }
+
+    .chalkboard-report.is-erasing .chalk-writing h3 {
+      /* 지우개가 글자의 왼쪽에 닿은 뒤부터 바로 지워집니다. */
+      animation: erase-line 0.78s 0.26s steps(8, end) both;
+    }
+
+    .chalkboard-report.is-erasing .chalk-writing p {
+      animation: erase-line 0.78s 1.66s steps(34, end) both;
+    }
+
+    .chalkboard-report.is-erasing .chalk-writing li:nth-child(1) {
+      animation: erase-line 0.78s 3.06s steps(18, end) both;
+    }
+
+    .chalkboard-report.is-erasing .chalk-writing li:nth-child(2) {
+      animation: erase-line 0.78s 4.46s steps(18, end) both;
+    }
+
+    .chalkboard-report.is-erasing .chalk-writing li:nth-child(3) {
+      animation: erase-line 0.78s 5.86s steps(18, end) both;
+    }
+
+    @keyframes chalk-write {
+      to {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+      }
+    }
+
+    @keyframes erase-board {
+      0% {
+        opacity: 1;
+        top: var(--erase-y-1);
+        left: -16%;
+        transform: rotate(86deg);
+      }
+
+      4% {
+        top: calc(var(--erase-y-1) - 8px);
+        left: 12%;
+      }
+
+      8% {
+        top: calc(var(--erase-y-1) + 8px);
+        left: 42%;
+      }
+
+      12% {
+        top: calc(var(--erase-y-1) - 8px);
+        left: 72%;
+      }
+
+      16% {
+        top: calc(var(--erase-y-1) + 8px);
+        left: 102%;
+      }
+
+      20% {
+        top: var(--erase-y-2);
+        left: -16%;
+      }
+
+      24% {
+        top: calc(var(--erase-y-2) - 8px);
+        left: 12%;
+      }
+
+      28% {
+        top: calc(var(--erase-y-2) + 8px);
+        left: 42%;
+      }
+
+      32% {
+        top: calc(var(--erase-y-2) - 8px);
+        left: 72%;
+      }
+
+      36% {
+        top: calc(var(--erase-y-2) + 8px);
+        left: 102%;
+      }
+
+      40% {
+        top: var(--erase-y-3);
+        left: -16%;
+      }
+
+      44% {
+        top: calc(var(--erase-y-3) - 8px);
+        left: 12%;
+      }
+
+      48% {
+        top: calc(var(--erase-y-3) + 8px);
+        left: 42%;
+      }
+
+      52% {
+        top: calc(var(--erase-y-3) - 8px);
+        left: 72%;
+      }
+
+      56% {
+        top: calc(var(--erase-y-3) + 8px);
+        left: 102%;
+      }
+
+      60% {
+        top: var(--erase-y-4);
+        left: -16%;
+      }
+
+      64% {
+        top: calc(var(--erase-y-4) - 8px);
+        left: 12%;
+      }
+
+      68% {
+        top: calc(var(--erase-y-4) + 8px);
+        left: 42%;
+      }
+
+      72% {
+        top: calc(var(--erase-y-4) - 8px);
+        left: 72%;
+      }
+
+      76% {
+        top: calc(var(--erase-y-4) + 8px);
+        left: 102%;
+      }
+
+      80% {
+        top: var(--erase-y-5);
+        left: -16%;
+      }
+
+      84% {
+        top: calc(var(--erase-y-5) - 8px);
+        left: 12%;
+      }
+
+      88% {
+        top: calc(var(--erase-y-5) + 8px);
+        left: 42%;
+      }
+
+      92% {
+        top: calc(var(--erase-y-5) - 8px);
+        left: 72%;
+      }
+
+      100% {
+        opacity: 1;
+        top: calc(var(--erase-y-5) + 8px);
+        left: 102%;
+        transform: rotate(94deg);
+      }
+    }
+
+    @keyframes erase-line {
+      from {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+      }
+
+      to {
+        opacity: 0;
+        clip-path: inset(0 0 0 100%);
+      }
+    }
+
+    @keyframes pointer-tap {
+      0%, 100% {
+        transform: rotate(-26deg);
+      }
+
+      50% {
+        transform: rotate(-20deg);
+      }
+    }
+
+    @media (max-width: 700px) {
+      .report-scene {
+        flex-direction: column;
+      }
+
+      .teacher-wrap {
+        width: min(52vw, 260px);
+        margin: 0 0 -40px;
+      }
+
+      .report-scene section {
+        width: 100%;
+      }
+    }
+
+    footer {
+      color: #777777;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>간단 업무 보고서</h1>
+    <p>비IT 재직자도 이해할 수 있는 HTML 기본 구조 예제입니다.</p>
+  </header>
+  <main>
+    <div class="report-scene">
+      <div class="teacher-wrap">
+        <img class="teacher" src="assets/teacher-no-pointer.png" alt="막대기를 든 선생님 일러스트">
+        <span class="pointer-rod" aria-hidden="true"></span>
+      </div>
+      <section>
+        <div class="chalkboard-report" role="button" tabindex="0" aria-label="클릭하면 주간 업무 보고가 칠판에 작성됩니다.">
+          <img src="assets/report-chalkboard.png" alt="분필 가루가 남아 있는 녹색 칠판">
+          <div class="chalk-writing" aria-hidden="true">
+            <h3>주간 업무 보고</h3>
+            <p>이번 주에는 교육 신청 페이지 초안 작성과 홍보 문구 검토를 진행했습니다.</p>
+            <ul>
+              <li>완료: 과정 소개문 초안 작성</li>
+              <li>진행 중: 신청 폼 항목 검토</li>
+              <li>예정: 수강생 안내 메일 발송</li>
+            </ul>
+          </div>
+          <img class="chalk-eraser" src="assets/chalkboard-eraser-tight.png" alt="" aria-hidden="true">
+          <button id="submit-button" class="submit-button" type="button">제출하기</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer>
+    <p>바이브 코딩 실습 예제 09</p>
+  </footer>
+  <script>
+    const chalkboardReport = document.querySelector('.chalkboard-report');
+    const pointerRod = document.querySelector('.pointer-rod');
+    const submitButton = document.querySelector('#submit-button');
+    const chalkEraser = document.querySelector('.chalk-eraser');
+
+    function placeEraserOnText() {
+      const boardRect = chalkboardReport.getBoundingClientRect();
+      const textLines = chalkboardReport.querySelectorAll('.chalk-writing h3, .chalk-writing p, .chalk-writing li');
+      const eraserHeight = chalkEraser.getBoundingClientRect().height || boardRect.height * 0.06;
+
+      textLines.forEach((line, index) => {
+        const lineRect = line.getBoundingClientRect();
+        const topPosition = lineRect.top - boardRect.top + (lineRect.height - eraserHeight) / 2;
+        chalkEraser.style.setProperty(`--erase-y-${index + 1}`, `${topPosition}px`);
+      });
+    }
+
+    function eraseReportOnBoard() {
+      placeEraserOnText();
+      void chalkEraser.offsetWidth;
+      chalkboardReport.classList.add('is-erasing');
+
+      setTimeout(() => {
+        chalkboardReport.classList.remove('is-writing', 'is-erasing');
+      }, 7000);
+    }
+
+    function writeReportOnBoard() {
+      if (chalkboardReport.classList.contains('is-erasing')) return;
+
+      if (chalkboardReport.classList.contains('is-writing')) {
+        eraseReportOnBoard();
+        return;
+      }
+
+      pointerRod.classList.remove('is-tapping');
+      void pointerRod.offsetWidth;
+      pointerRod.classList.add('is-tapping');
+
+      setTimeout(() => {
+        chalkboardReport.classList.add('is-writing');
+      }, 600);
+    }
+
+    chalkboardReport.addEventListener('click', writeReportOnBoard);
+    chalkboardReport.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        writeReportOnBoard();
+      }
+    });
+
+    submitButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      submitButton.textContent = '제출 완료';
+      submitButton.disabled = true;
+    });
+  </script>
+</body>
+</html>
